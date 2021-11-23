@@ -29,6 +29,9 @@ class UserLogin(UserBase):
     )
 
 
+class UserRegister(UserBase, UserLogin):
+    pass
+
 class User(UserBase):
     user_name: str = Field(
         ...,
@@ -73,7 +76,21 @@ class Tweet(BaseModel):
     tags=["Users"]
     )
 def signup():
-    pass
+    """
+    Signup
+
+    Register an user in app
+
+    Parameters:
+        - Request body parameter:
+            - user: UserRegister
+    Returns a json with basic user information:
+        - user_id: UUID
+        - email: Emailstr
+        - first_name: str
+        - last_name: str
+    """
+
 
 ### Login
 @app.post(
