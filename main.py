@@ -23,7 +23,8 @@ class UserBase(BaseModel):
 class UserLogin(UserBase):
     password: str = Field(
         ...,
-        min_length=8
+        min_length=8,
+        max_length=58
         )
 
 
@@ -42,7 +43,7 @@ class User(UserBase):
 
 
 class Tweet(BaseModel):
-    pass
+    
 
 
 @app.get(path="/",)
