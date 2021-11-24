@@ -4,6 +4,7 @@ from typing import Optional, List
 from uuid import UUID
 from datetime import date
 from datetime import datetime
+from fastapi.param_functions import Query
 
 #Pydantic
 from pydantic import BaseModel, EmailStr
@@ -11,6 +12,8 @@ from pydantic import Field
 
 #FastApi
 from fastapi import FastAPI, status, Body, HTTPException, Path
+
+from testing import read_files
 
 
 app = FastAPI()
@@ -69,20 +72,20 @@ class Tweet(BaseModel):
 
 
 #Functions
-def read_file(entity):
+def read_file(entity: str):
     with open(entity + ".json", "r+", encoding="utf-8") as f:
         results = json.loads(f.read())
         return results
 
-def search_id(id, results, dict_key):
+def search_id(id, results, dict_key: str):
     id = str(id)
     for data in results:
         if data[dict_key] == id:
-            return data
+            return data, True
     else:
         raise HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail="User not found :("
+        detail= dict_key + " not found :("
     )
 
 def insert_to_file(entity: str, body_parameter):
@@ -107,6 +110,9 @@ def insert_to_file(entity: str, body_parameter):
         f.seek(0) # start writing at the beginning like overwrite
         f.write(json.dumps(results))
 
+def overwrite_file(entity: str, result_list):
+    with open(entity + '.json', 'w', encoding='utf-8') as f:
+        f.write(json.dumps(result_list))
 
 #Path Operations
 
@@ -204,12 +210,13 @@ def show_user(user_name: str = Path(
         - birth_date: datetime
     """
     results = read_file(entity="users")
-    return search_id(user_name, results, dict_key="user_name")
+    user,found =search_id(user_name, results, dict_key="user_name")
+    return user
     
 
 ### Delete an user
 @app.delete(
-    path="/users/{user_id}/delete",
+    path="/users/{user_name}/delete",
     response_model= User,
     status_code=status.HTTP_200_OK,
     summary="Delete an user",
@@ -222,12 +229,17 @@ def delete_user(user_name: str = Path(
         example="nicorlas"
         )
 ):
-    pass
+    results = read_file(entity="users")
+    user ,found = search_id(user_name, results, dict_key="user_name")
+    if found:
+        results.remove(user)
+        overwrite_file(entity="users", result_list=results)
+        return user
 
 
 ### Update an User
 @app.put(
-    path="/users/{user_id}/update",
+    path="/users/{user_name}/update",
     response_model= User,
     status_code=status.HTTP_200_OK,
     summary="Update an user",
@@ -241,7 +253,7 @@ def update_user(user_name: str = Path(
         )):
     with open("users.json", "r+", encoding="utf-8") as f:
         results = json.loads(f.read())
-        search_user(user_name, results)
+        search_id(user_name, results, dict_key="user_name")
 
 
 
@@ -325,7 +337,8 @@ def show_a_tweet(tweet_id: UUID = Path(
         )
 ):
     results = read_file(entity="tweets")
-    return search_id(tweet_id, results, dict_key="tweet_id")
+    tweet,found=search_id(tweet_id, results, dict_key="tweet_id")
+    return tweet
 
 ### Delete a tweet
 @app.delete(
@@ -335,8 +348,19 @@ def show_a_tweet(tweet_id: UUID = Path(
     summary="Delete a tweet",
     tags=["Tweets"]
     )
-def delete_a_tweet():
-    pass
+def delete_a_tweet(tweet_id: UUID = Path(
+        ...,
+        tittle = "Tweet identificator",
+        description = "It's an identificator for each tweet",
+        example="3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        )
+):
+    results = read_file(entity="tweets")
+    tweet ,found = search_id(tweet_id, results, dict_key="tweet_id")
+    if found:
+        results.remove(tweet)
+        overwrite_file(entity="tweets", result_list=results)
+        return tweet
 
 ### Update a tweet
 @app.put(
