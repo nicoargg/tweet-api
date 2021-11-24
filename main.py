@@ -250,10 +250,37 @@ def update_user(user_name: str = Path(
         tittle = "Delete a User",
         description = "This delete an user",
         example="nicorlas"
-        )):
-    with open("users.json", "r+", encoding="utf-8") as f:
-        results = json.loads(f.read())
-        search_id(user_name, results, dict_key="user_name")
+        ),    
+    first_name: Optional[str] = Query(
+        default=None,
+        min_length=1,
+        max_length=50,
+        title="First name",
+        description="This is the first name of the user, minimum characters: 1"
+    ),
+    last_name: Optional[str] = Query(
+        default=None,
+        min_length=1,
+        max_length=50,
+        title="Last name",
+        description="This is the last name of the user, minimum characters: 1"
+    ),
+    email: Optional[EmailStr] = Query(
+        default=None,
+        title="Email",
+        description="This is the email of the user")
+):
+        results= read_file(entity="users")
+        user,found=search_id(user_name,results,dict_key="user_name")
+        if found:
+            if first_name:
+                user["first_name"] = first_name
+            if last_name:
+                user["last_name"] = last_name
+            if email:
+                user["email"] = email
+            overwrite_file(entity='users', result_list=results)
+            return user
 
 
 
@@ -280,7 +307,7 @@ def home():
         updated_at: Optional[datetime] 
         by: User
     """
-    read_file(entity="tweet")
+    return read_file(entity="tweets")
 
 
 ### Post a tweet
@@ -370,5 +397,24 @@ def delete_a_tweet(tweet_id: UUID = Path(
     summary="Update a tweet",
     tags=["Tweets"]
     )
-def update_a_tweet(tweet: Tweet = Body(...)):
-    pass
+def update_a_tweet(
+    tweet_id = Path(
+    ...,
+    title='tweet id',
+    description="this is the tweet id. Minimum characters: 1"
+    ),
+    content: Optional[str] = Query(
+        default=None,
+        min_length=1,
+        max_length=280,
+        title="Tweet content",
+        description="This is content of the tweet, minimum characters: 1"
+    )
+):
+    results= read_file(entity="tweets")
+    tweet,found=search_id(tweet_id,results,dict_key="tweet_id")
+    if found:
+        if content:
+            tweet["content"]=content
+    overwrite_file(entity='tweets', result_list=results)
+    return tweet
