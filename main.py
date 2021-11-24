@@ -10,7 +10,7 @@ from pydantic import BaseModel, EmailStr
 from pydantic import Field
 
 #FastApi
-from fastapi import FastAPI, status, Body
+from fastapi import FastAPI, status, Body, HTTPException, Path
 
 
 app = FastAPI()
@@ -18,7 +18,11 @@ app = FastAPI()
 # Models
 
 class UserBase(BaseModel):
-    user_id: UUID = Field(...)
+    user_name: str = Field(
+        ...,
+        min_length=1,
+        max_length=50,
+        )
     email: EmailStr = Field(...)
 
 
@@ -31,11 +35,6 @@ class UserLogin(UserBase):
 
 
 class User(UserBase):
-    user_name: str = Field(
-        ...,
-        min_length=1,
-        max_length=50,
-        )
     first_name: str = Field(
         ...,
         min_length=1,
@@ -68,6 +67,9 @@ class Tweet(BaseModel):
     updated_at: Optional[datetime] = Field(default=None)        
     by: User = Field(...)
 
+
+#Functions
+
 #Path Operations
 
 
@@ -91,7 +93,7 @@ def signup(user: UserRegister = Body(...)):
         - Request body parameter:
             - user: UserRegister
     Returns a json with basic user information:
-        - user_id: UUID
+        - user_name: str
         - email: Emailstr
         - first_name: str
         - last_name: str
@@ -100,7 +102,7 @@ def signup(user: UserRegister = Body(...)):
     with open("users.json", "r+", encoding="utf-8") as f: 
         results = json.loads(f.read())
         user_dict = user.dict()
-        user_dict["user_id"] = str(user_dict["user_id"])
+        user_dict["user_name"] = str(user_dict["user_name"])
         user_dict["birth_date"] = str(user_dict["birth_date"])
         results.append(user_dict)
         f.seek(0)
@@ -145,14 +147,46 @@ def show_all_users():
 
 ### Show an user
 @app.get(
-    path="/users/{user_id}",
+    path="/users/{user_name}",
     response_model= User,
     status_code=status.HTTP_200_OK,
     summary="Show an user",
     tags=["Users"]
     )
-def show_user():
-    pass
+def show_user(user_name: str = Path(
+        ...,
+        tittle = "User identificator",
+        description = "It's an identificator for each user",
+        example="nicorlas"
+        )
+):
+    """
+    Show a User
+
+    This path operation show if a person exist in the app
+
+    Parameters:
+        - user_name: str
+
+    Returns a json with user data:
+        - user_name: str
+        - email: Emailstr
+        - first_name: str
+        - last_name: str
+        - birth_date: datetime
+    """
+    with open("users.json", "r+", encoding="utf-8") as f: 
+        results = json.loads(f.read())
+        id = str(user_name)
+        for data in results:
+            if data["user_name"] == id:
+                return data
+        else:
+            raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"¡This user_id doesn't exist!"
+        )
+    
 
 ### Delete an user
 @app.delete(
@@ -164,6 +198,7 @@ def show_user():
     )
 def delete_user():
     pass
+
 
 ### Update an User
 @app.put(
