@@ -69,10 +69,44 @@ class Tweet(BaseModel):
 
 
 #Functions
-def read_files(files):
-    with open(files, "r+", encoding="utf-8") as f:
+def read_file(entity):
+    with open(entity + ".json", "r+", encoding="utf-8") as f:
         results = json.loads(f.read())
         return results
+
+def search_id(id, results, dict_key):
+    id = str(id)
+    for data in results:
+        if data[dict_key] == id:
+            return data
+    else:
+        raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="User not found :("
+    )
+
+def insert_to_file(entity: str, body_parameter):
+    with open(entity + ".json", "r+", encoding='utf-8') as f:
+        results = json.loads(f.read()) # cast str -> json
+        json_dict = body_parameter.dict()
+        
+        if entity == "tweets":
+            json_dict["tweet_id"] = str(json_dict["tweet_id"]) # manual cast / fastapi can't cast uuid automatically
+            json_dict["created_at"] = str(json_dict["created_at"]) # manual cast / fastapi can't cast date automatically
+
+            if len(str(json_dict["updated_at"])) > 0 :
+                json_dict["updated_at"] = str(json_dict["updated_at"]) # manual cast / fastapi can't cast date automatically
+            json_dict["by"]["user_name"] = str(json_dict["by"]["user_name"])
+            json_dict["by"]["birth_date"] = str(json_dict["by"]["birth_date"])
+
+        else:
+            json_dict['user_name'] = str(json_dict['user_name'])
+            json_dict['birth_date'] = str(json_dict['birth_date'])
+        
+        results.append(json_dict)
+        f.seek(0) # start writing at the beginning like overwrite
+        f.write(json.dumps(results))
+
 
 #Path Operations
 
@@ -102,15 +136,8 @@ def signup(user: UserRegister = Body(...)):
         - last_name: str
         - birth_date: date
     """
-    with open("users.json", "r+", encoding="utf-8") as f:
-        results = json.loads(f.read())
-        user_dict = user.dict()
-        user_dict["user_name"] = str(user_dict["user_name"])
-        user_dict["birth_date"] = str(user_dict["birth_date"])
-        results.append(user_dict)
-        f.seek(0)
-        f.write(json.dumps(results))
-        return user
+    insert_to_file(entity="users",body_parameter=user)
+    return user
 
 ### Login
 @app.post(
@@ -144,7 +171,7 @@ def show_all_users():
         - last_name: str
         - birth_date: date
     """
-    read_files(files="users.json")
+    return read_file(entity="users")
 
 ### Show an user
 @app.get(
@@ -176,16 +203,8 @@ def show_user(user_name: str = Path(
         - last_name: str
         - birth_date: datetime
     """
-    results = read_files(files="users.json")
-    id = str(user_name)
-    for data in results:
-        if data["user_name"] == id:
-            return data
-    else:
-        raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="User not found :("
-    )
+    results = read_file(entity="users")
+    return search_id(user_name, results, dict_key="user_name")
     
 
 ### Delete an user
@@ -214,8 +233,16 @@ def delete_user(user_name: str = Path(
     summary="Update an user",
     tags=["Users"]
     )
-def update_user():
-    pass
+def update_user(user_name: str = Path(
+        ...,
+        tittle = "Delete a User",
+        description = "This delete an user",
+        example="nicorlas"
+        )):
+    with open("users.json", "r+", encoding="utf-8") as f:
+        results = json.loads(f.read())
+        search_user(user_name, results)
+
 
 
 ##Tweets
@@ -241,7 +268,7 @@ def home():
         updated_at: Optional[datetime] 
         by: User
     """
-    read_files(files="tweets.json")
+    read_file(entity="tweet")
 
 
 ### Post a tweet
@@ -297,17 +324,8 @@ def show_a_tweet(tweet_id: UUID = Path(
         example="3fa85f64-5717-4562-b3fc-2c963f66afa6"
         )
 ):
-    id = str(tweet_id)
-    results = read_files(files="tweets.json")
-    for data in results:
-        if data["tweet_id"] == id:
-            return data
-        else:
-            raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="Tweet not found :("
-        )
-
+    results = read_file(entity="tweets")
+    return search_id(tweet_id, results, dict_key="tweet_id")
 
 ### Delete a tweet
 @app.delete(
