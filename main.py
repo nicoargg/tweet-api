@@ -69,9 +69,12 @@ class Tweet(BaseModel):
 
 
 #Functions
+def read_files(files):
+    with open(files, "r+", encoding="utf-8") as f:
+        results = json.loads(f.read())
+        return results
 
 #Path Operations
-
 
 ##Users
 
@@ -99,7 +102,7 @@ def signup(user: UserRegister = Body(...)):
         - last_name: str
         - birth_date: date
     """
-    with open("users.json", "r+", encoding="utf-8") as f: 
+    with open("users.json", "r+", encoding="utf-8") as f:
         results = json.loads(f.read())
         user_dict = user.dict()
         user_dict["user_name"] = str(user_dict["user_name"])
@@ -141,9 +144,7 @@ def show_all_users():
         - last_name: str
         - birth_date: date
     """
-    with open("users.json", "r", encoding="utf-8") as f:
-        results = json.loads(f.read())
-        return results
+    read_files(files="users.json")
 
 ### Show an user
 @app.get(
@@ -175,17 +176,16 @@ def show_user(user_name: str = Path(
         - last_name: str
         - birth_date: datetime
     """
-    with open("users.json", "r+", encoding="utf-8") as f: 
-        results = json.loads(f.read())
-        id = str(user_name)
-        for data in results:
-            if data["user_name"] == id:
-                return data
-        else:
-            raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"¡This user_id doesn't exist!"
-        )
+    results = read_files(files="users.json")
+    id = str(user_name)
+    for data in results:
+        if data["user_name"] == id:
+            return data
+    else:
+        raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="User not found :("
+    )
     
 
 ### Delete an user
@@ -196,7 +196,13 @@ def show_user(user_name: str = Path(
     summary="Delete an user",
     tags=["Users"]
     )
-def delete_user():
+def delete_user(user_name: str = Path(
+        ...,
+        tittle = "Delete a User",
+        description = "This delete an user",
+        example="nicorlas"
+        )
+):
     pass
 
 
@@ -235,9 +241,7 @@ def home():
         updated_at: Optional[datetime] 
         by: User
     """
-    with open("tweets.json", "r", encoding="utf-8") as f:
-        results = json.loads(f.read())
-        return results
+    read_files(files="tweets.json")
 
 
 ### Post a tweet
@@ -270,7 +274,7 @@ def post(tweet: Tweet = Body(...)):
         tweet_dict["tweet_id"] = str(tweet_dict["tweet_id"])
         tweet_dict["created_at"] = str(tweet_dict["created_at"])
         tweet_dict["updated_at"] = str(tweet_dict["updated_at"])
-        tweet_dict["by"]["user_id"] = str(tweet_dict["by"]["user_id"])
+        tweet_dict["by"]["user_name"] = str(tweet_dict["by"]["user_name"])
         tweet_dict["by"]["birth_date"] = str(tweet_dict["by"]["birth_date"])
 
         results.append(tweet_dict)
@@ -286,8 +290,24 @@ def post(tweet: Tweet = Body(...)):
     summary="Show a tweet",
     tags=["Tweets"]
     )
-def show_a_tweet():
-    pass
+def show_a_tweet(tweet_id: UUID = Path(
+        ...,
+        tittle = "Tweet identificator",
+        description = "It's an identificator for each tweet",
+        example="3fa85f64-5717-4562-b3fc-2c963f66afa6"
+        )
+):
+    id = str(tweet_id)
+    results = read_files(files="tweets.json")
+    for data in results:
+        if data["tweet_id"] == id:
+            return data
+        else:
+            raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Tweet not found :("
+        )
+
 
 ### Delete a tweet
 @app.delete(
@@ -308,5 +328,5 @@ def delete_a_tweet():
     summary="Update a tweet",
     tags=["Tweets"]
     )
-def update_a_tweet():
+def update_a_tweet(tweet: Tweet = Body(...)):
     pass
