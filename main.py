@@ -11,9 +11,8 @@ from pydantic import BaseModel, EmailStr
 from pydantic import Field
 
 #FastApi
-from fastapi import FastAPI, status, Body, HTTPException, Path
+from fastapi import FastAPI, status, Body, HTTPException, Path, Form
 
-from testing import read_files
 
 
 app = FastAPI()
@@ -142,6 +141,7 @@ def signup(user: UserRegister = Body(...)):
         - last_name: str
         - birth_date: date
     """
+
     insert_to_file(entity="users",body_parameter=user)
     return user
 
@@ -154,7 +154,7 @@ def signup(user: UserRegister = Body(...)):
     tags=["Users"]
     )
 def login():
-    pass
+    pass #working on this
 
 ### Show all users
 @app.get(
@@ -334,19 +334,8 @@ def post(tweet: Tweet = Body(...)):
         updated_at: Optional[datetime] 
         by: User
     """
-    with open("tweets.json", "r+", encoding="utf-8") as f: 
-        results = json.loads(f.read())
-        tweet_dict = tweet.dict()
-        tweet_dict["tweet_id"] = str(tweet_dict["tweet_id"])
-        tweet_dict["created_at"] = str(tweet_dict["created_at"])
-        tweet_dict["updated_at"] = str(tweet_dict["updated_at"])
-        tweet_dict["by"]["user_name"] = str(tweet_dict["by"]["user_name"])
-        tweet_dict["by"]["birth_date"] = str(tweet_dict["by"]["birth_date"])
-
-        results.append(tweet_dict)
-        f.seek(0)
-        f.write(json.dumps(results))
-        return tweet
+    insert_to_file(entity="tweets",body_parameter=tweet)
+    return tweet
 
 ### Show a tweet
 @app.get(
