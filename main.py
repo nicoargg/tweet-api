@@ -229,6 +229,21 @@ def delete_user(user_name: str = Path(
         example="nicorlas"
         )
 ):
+    """
+    Delete a User
+
+    This path operation delete a user in the app
+
+    Parameters:
+        - user_name: str
+
+    Returns a json with deleted user data:
+        - user_name: user_name
+        - email: Emailstr
+        - first_name: str
+        - last_name: str
+        - birth_date: datetime
+    """
     results = read_file(entity="users")
     user ,found = search_id(user_name, results, dict_key="user_name")
     if found:
@@ -270,17 +285,36 @@ def update_user(user_name: str = Path(
         title="Email",
         description="This is the email of the user")
 ):
-        results= read_file(entity="users")
-        user,found=search_id(user_name,results,dict_key="user_name")
-        if found:
-            if first_name:
-                user["first_name"] = first_name
-            if last_name:
-                user["last_name"] = last_name
-            if email:
-                user["email"] = email
-            overwrite_file(entity='users', result_list=results)
-            return user
+    """
+     Update a user
+    This path operation Update a user
+
+     Parameters:
+    - path parameter:
+        - user_name: str
+    - query parameters:
+        - first_name: str
+        - last_name: str
+        -email: EmailStr
+    
+     Returns a json list with the following keys
+    - user_name: str
+    - email: EmailStr
+    - first_name: str
+    - last_name: str
+    - birthday: date
+    """
+    results= read_file(entity="users")
+    user,found=search_id(user_name,results,dict_key="user_name")
+    if found:
+        if first_name:
+            user["first_name"] = first_name
+        if last_name:
+            user["last_name"] = last_name
+        if email:
+            user["email"] = email
+        overwrite_file(entity='users', result_list=results)
+        return user
 
 
 
@@ -352,6 +386,20 @@ def show_a_tweet(tweet_id: UUID = Path(
         example="3fa85f64-5717-4562-b3fc-2c963f66afa6"
         )
 ):
+    """
+     Show a tweet
+    this path parameter show a tweet of the app by the tweet_id (UUID)
+     Parameters:
+    - path parameter
+        - tweet_id: str
+    
+     Returns a json with the basic tweet information (tweet model):
+    - tweet_id: UUID
+    - content: str
+    - created_at: datetime
+    - updated_at: datetime
+    - by: user
+    """
     results = read_file(entity="tweets")
     tweet,found=search_id(tweet_id, results, dict_key="tweet_id")
     return tweet
@@ -371,6 +419,20 @@ def delete_a_tweet(tweet_id: UUID = Path(
         example="3fa85f64-5717-4562-b3fc-2c963f66afa6"
         )
 ):
+    """
+     Delete a tweet
+    This path operation delete a tweet from a json
+    ## Parameters:
+    - path parameter:
+        - tweet_id: str
+    
+    ## Returns a json list with the following keys
+    - tweet_id: UUID
+    - content: str
+    - created_at: datetime
+    - updated_at: datetime
+    - by: user
+    """
     results = read_file(entity="tweets")
     tweet ,found = search_id(tweet_id, results, dict_key="tweet_id")
     if found:
@@ -400,6 +462,22 @@ def update_a_tweet(
         description="This is content of the tweet, minimum characters: 1"
     )
 ):
+    """
+     Update a tweet
+    This path operation Update a tweet
+    ## Parameters:
+    - path parameter:
+        - tweet_id: str
+    - query parameters:
+        - content: str
+    
+     Returns a json list following keys
+    - tweet_id: UUID
+    - content: str
+    - created_at: datetime
+    - updated_at: datetime
+    - by: user
+    """
     results= read_file(entity="tweets")
     tweet,found=search_id(tweet_id,results,dict_key="tweet_id")
     if found:
